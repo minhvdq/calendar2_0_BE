@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema({
         minLength: 3,
         required: true,
     },
+    
     events: [
         {
             type: String,
