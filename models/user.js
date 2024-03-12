@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema({
     
     events: [
         {
-            type: String,
+            type: Number,
         }
     ]
 })
