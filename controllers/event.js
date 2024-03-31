@@ -94,6 +94,83 @@ eventRouter.get('/user/:user_id', async (request, res) => {
     }
 })
 
+
+eventRouter.post('/addEvents/:user_id', async (request, res) => {
+    const eventData = request.body;
+    const title = eventData.TITLE
+    const startTime= eventData.START_TIME
+    const endTime= eventData.END_TIME
+    let period= eventData.PERIOD !== "" ? eventData.PERIOD : 'NULL';
+    const descriptions= eventData.DESCRIPTIONS
+    const location= eventData.LOCATION
+    const userId = request.params.user_id
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const call = `INSERT INTO EVENT(EVENT_ID,TITLE, START_TIME,END_TIME,PERIOD,LOCATION,DESCRIPTIONS,USER_ID) 
+                      VALUES(EVENT_SEQ.NEXTVAL,'${title}',TO_TIMESTAMP('${startTime}', 'YYYY-MM-DD"T"HH24:MI:SS'), 
+                      TO_TIMESTAMP('${endTime}', 'YYYY-MM-DD"T"HH24:MI:SS'),${period}, '${location}','${descriptions}', '${userId}')`
+        const result = await connection.execute(call);
+        await connection.commit();
+
+        res.status(200).send("Event added successfully");;
+    } catch (error) {
+        console.error("Error executing SQL query:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    } finally {
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (error) {
+                console.error("Error closing connection:", error);
+            }
+        }
+    }
+})
+
+
+eventRouter.post('/editEvents/:eventID', async (request, res) => {
+    const eventData = request.body;
+    const title = eventData.TITLE
+    const startTime= eventData.START_TIME
+    const endTime= eventData.END_TIME
+    let period= eventData.PERIOD !== "" ? eventData.PERIOD : 'NULL';
+    const descriptions= eventData.DESCRIPTIONS
+    const location= eventData.LOCATION
+    const eventId = request.params.eventID
+    console.log("title is " + title)
+    console.log("startime  is " + startTime)
+    console.log("end time is " + endTime)
+    console.log("description is " + descriptions)
+    console.log("location is " + location)
+    console.log("inside edit events be")
+
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const call = `UPDATE EVENT SET TITLE = '${title}', START_TIME = TO_TIMESTAMP('${startTime}', 'YYYY-MM-DD"T"HH24:MI:SS'),END_TIME = TO_TIMESTAMP('${endTime}', 'YYYY-MM-DD"T"HH24:MI:SS'),
+                      PERIOD = ${period}, LOCATION = '${location}', DESCRIPTIONS = '${descriptions}'
+                      WHERE EVENT_ID = ${eventId}`;
+        console.log(call)
+        const result = await connection.execute(call);
+        await connection.commit();
+
+        res.status(200).send("Event edited successfully");;
+    } catch (error) {
+        console.error("Error executing SQL query:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    } finally {
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (error) {
+                console.error("Error closing connection:", error);
+            }
+        }
+    }
+})
+
+
 module.exports = eventRouter;
 
 
