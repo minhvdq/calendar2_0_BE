@@ -104,16 +104,44 @@ eventRouter.post('/addEvents/:user_id', async (request, res) => {
     const descriptions= eventData.DESCRIPTIONS
     const location= eventData.LOCATION
     const userId = request.params.user_id
+    const groupId = eventData.GROUP_ID
     let connection;
     try {
         connection = await pool.getConnection();
-        const call = `INSERT INTO EVENT(EVENT_ID,TITLE, START_TIME,END_TIME,PERIOD,LOCATION,DESCRIPTIONS,USER_ID) 
-                      VALUES(EVENT_SEQ.NEXTVAL,'${title}',TO_TIMESTAMP('${startTime}', 'YYYY-MM-DD"T"HH24:MI:SS'), 
-                      TO_TIMESTAMP('${endTime}', 'YYYY-MM-DD"T"HH24:MI:SS'),${period}, '${location}','${descriptions}', '${userId}')`
-        const result = await connection.execute(call);
-        await connection.commit();
 
-        res.status(200).send("Event added successfully");;
+        const call = `INSERT INTO EVENT(EVENT_ID,TITLE, START_TIME,END_TIME,PERIOD,LOCATION,DESCRIPTIONS,USER_ID, GROUP_ID) 
+                      VALUES(EVENT_SEQ.NEXTVAL,'${title}',TO_TIMESTAMP('${startTime}', 'YYYY-MM-DD"T"HH24:MI:SS'), 
+                      TO_TIMESTAMP('${endTime}', 'YYYY-MM-DD"T"HH24:MI:SS'),${period}, '${location}','${descriptions}', '${userId}', '${groupId}')
+                      RETURNING EVENT_ID,TITLE, START_TIME,END_TIME,PERIOD,LOCATION,DESCRIPTIONS,USER_ID,GROUP_ID
+                      INTO
+                      :EVENT_ID,:TITLE, :START_TIME,:END_TIME,:PERIOD,:LOCATION,:DESCRIPTIONS,:USER_ID, :GROUP_ID`
+        const result = await connection.execute(call, {
+            EVENT_ID:   { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
+            TITLE:  { type: oracledb.STRING, dir: oracledb.BIND_OUT },
+            START_TIME : { type: oracledb.DB_TYPE_TIMESTAMP_LTZ, dir: oracledb.BIND_OUT },
+            END_TIME: { type: oracledb.DB_TYPE_TIMESTAMP_LTZ, dir: oracledb.BIND_OUT },
+            PERIOD: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
+            LOCATION: { type: oracledb.STRING, dir: oracledb.BIND_OUT },
+            DESCRIPTIONS: { type: oracledb.STRING, dir: oracledb.BIND_OUT },
+            USER_ID: { type: oracledb.STRING, dir: oracledb.BIND_OUT },
+            GROUP_ID: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT }
+        } );
+        await connection.commit();
+ 
+
+        const outputItem = {
+            EVENT_ID: result.outBinds.EVENT_ID[0],
+            TITLE: result.outBinds.TITLE[0],
+            START_TIME: result.outBinds.START_TIME[0],
+            END_TIME: result.outBinds.END_TIME[0],
+            PERIOD: result.outBinds.PERIOD[0],
+            LOCATION: result.outBinds.LOCATION[0],
+            DESCRIPTIONS: result.outBinds.DESCRIPTIONS[0],
+            USER_ID: result.outBinds.USER_ID[0],
+            GROUP_ID: result.outBinds.GROUP_ID[0]
+        }
+        console.log('output', JSON.stringify(outputItem))
+        res.status(200).json(outputItem);
     } catch (error) {
         console.error("Error executing SQL query:", error);
         res.status(500).json({ error: "Internal Server Error" });
@@ -127,7 +155,6 @@ eventRouter.post('/addEvents/:user_id', async (request, res) => {
         }
     }
 })
-
 
 eventRouter.post('/editEvents/:eventID', async (request, res) => {
     const eventData = request.body;
@@ -150,7 +177,8 @@ eventRouter.post('/editEvents/:eventID', async (request, res) => {
         connection = await pool.getConnection();
         const call = `UPDATE EVENT SET TITLE = '${title}', START_TIME = TO_TIMESTAMP('${startTime}', 'YYYY-MM-DD"T"HH24:MI:SS'),END_TIME = TO_TIMESTAMP('${endTime}', 'YYYY-MM-DD"T"HH24:MI:SS'),
                       PERIOD = ${period}, LOCATION = '${location}', DESCRIPTIONS = '${descriptions}'
-                      WHERE EVENT_ID = ${eventId}`;
+                      WHERE EVENT_ID = ${eventId}
+                      `;
         console.log(call)
         const result = await connection.execute(call);
         await connection.commit();
@@ -170,6 +198,30 @@ eventRouter.post('/editEvents/:eventID', async (request, res) => {
     }
 })
 
+eventRouter.delete('/:id', async (request, res) => {
+    const eventId = request.params.id
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const call = `DELETE FROM EVENT WHERE EVENT_ID = ${eventId}`;
+        console.log(call)
+        await connection.execute(call);
+        await connection.commit();
+
+        res.status(200).send("Event deleted successfully");;
+    } catch (error) {
+        console.error("Error executing SQL query:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    } finally {
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (error) {
+                console.error("Error closing connection:", error);
+            }
+        }
+    }
+})
 
 module.exports = eventRouter;
 
