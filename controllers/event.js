@@ -165,13 +165,6 @@ eventRouter.post('/editEvents/:eventID', async (request, res) => {
     const descriptions= eventData.DESCRIPTIONS
     const location= eventData.LOCATION
     const eventId = request.params.eventID
-    console.log("title is " + title)
-    console.log("startime  is " + startTime)
-    console.log("end time is " + endTime)
-    console.log("description is " + descriptions)
-    console.log("location is " + location)
-    console.log("inside edit events be")
-
     let connection;
     try {
         connection = await pool.getConnection();
@@ -197,7 +190,50 @@ eventRouter.post('/editEvents/:eventID', async (request, res) => {
         }
     }
 })
+eventRouter.put('/editMultipleEvents/:eventID', async (request,res)=>{
+    const eventData = request.body;
+    const title = eventData.TITLE
+    const startTime= eventData.START_TIME+':00'
+    const endTime= eventData.END_TIME+':00'
+    let period= eventData.PERIOD !== "" ? eventData.PERIOD : 'NULL';
+    const descriptions= eventData.DESCRIPTIONS
+    const location= eventData.LOCATION
+    const eventId = request.params.eventID
+    console.log("start time is ",startTime)
+    console.log("end time is ",endTime)
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const callGroupID = `SELECT GROUP_ID,START_TIME FROM EVENT WHERE EVENT_ID=${eventId}`
+        const result = await connection.execute(callGroupID);
+        console.log(result)
+        const groupId = result.rows[0][0]
+        const start_time_event = moment(result.rows[0][1].toISOString()).format('YYYY-MM-DDTHH:mm:ss[Z]');
+        console.log('groupID '+ groupId)
+        console.log(start_time_event)
+        const call = `UPDATE event 
+        SET TITLE = '${title}', DESCRIPTIONS = '${descriptions}', LOCATION = '${location}',
+        START_TIME = TO_TIMESTAMP(TO_CHAR(start_time, 'YYYY-MM-DD') || 'T' || '${startTime}Z', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+        END_TIME = TO_TIMESTAMP(TO_CHAR(end_time, 'YYYY-MM-DD') || 'T' || '${endTime}Z', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+        WHERE group_id = ${groupId} and START_TIME >= TO_TIMESTAMP('${start_time_event}', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`;
+        console.log('query is ',call)
+        const ress = await connection.execute(call)
+        await connection.commit();
 
+        res.status(200).send("Multiple events edited successfully");;
+    } catch (error) {
+        console.error("Error executing SQL query:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    } finally {
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (error) {
+                console.error("Error closing connection:", error);
+            }
+        }
+    }
+})
 eventRouter.delete('/:id', async (request, res) => {
     const eventId = request.params.id
     let connection;
@@ -223,6 +259,42 @@ eventRouter.delete('/:id', async (request, res) => {
     }
 })
 
+
+eventRouter.delete('/deleteMultipleEvents/:eventID', async (request, res) => {
+    const eventId = request.params.eventID
+    // const eventData = request.body;
+    // const startTime= eventData.START_TIME+':00'
+    // console.log("start time is " , startTime)
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const callGroupID = `SELECT GROUP_ID, START_TIME FROM EVENT WHERE EVENT_ID=${eventId}`
+        console.log(callGroupID)
+        const result = await connection.execute(callGroupID);
+        console.log(result.rows)
+        const groupID = result.rows[0][0]
+        const startTime = moment(result.rows[0][1].toISOString()).format('YYYY-MM-DDTHH:mm:ss[Z]')
+        console.log("group id is ", groupID)
+        console.log("start time is ",startTime)
+        const call = `DELETE FROM EVENT WHERE GROUP_ID = ${groupID} AND START_TIME >=TO_TIMESTAMP('${startTime}', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`;
+        console.log(call)
+        await connection.execute(call);
+        await connection.commit();
+
+        res.status(200).send("Event deleted successfully");;
+    } catch (error) {
+        console.error("Error executing SQL query:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    } finally {
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (error) {
+                console.error("Error closing connection:", error);
+            }
+        }
+    }
+})
 module.exports = eventRouter;
 
 
