@@ -1,15 +1,18 @@
 const eventRouter = require('express').Router()
 const oracledb = require('oracledb')
 const moment = require('moment')
+const config = require('../utils/config.js')
+//import config from '../utils/config'
 
 
 let pool;
 
 const initializePool = async () => {
+    let oraclePass = config.ORACLE_PASS;
     try {
         pool = await oracledb.createPool({
             user: "admin",
-            password: "Binhtcd23072003",
+            password: `${oraclePass}`,
             connectString: "(description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1521)(host=adb.us-ashburn-1.oraclecloud.com))(connect_data=(service_name=gde533bf5874b44_events_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))",
             poolMax: 10, // Maximum number of connections in the pool
             poolMin: 2,  // Minimum number of connections in the pool
@@ -190,6 +193,7 @@ eventRouter.post('/editEvents/:eventID', async (request, res) => {
         }
     }
 })
+
 eventRouter.put('/editMultipleEvents/:eventID', async (request,res)=>{
     const eventData = request.body;
     const title = eventData.TITLE
@@ -234,6 +238,7 @@ eventRouter.put('/editMultipleEvents/:eventID', async (request,res)=>{
         }
     }
 })
+
 eventRouter.delete('/:id', async (request, res) => {
     const eventId = request.params.id
     let connection;
