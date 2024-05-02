@@ -2,6 +2,7 @@ const userRouter = require('express').Router()
 const User = require('../models/user')
 const bcrypt = require('bcrypt')
 const mongoose = require('mongoose')
+const sendEmail = require('../utils/email/sendEmail')
 
 userRouter.get('/', async (request, response) => {
     console.log("getting")
@@ -17,17 +18,23 @@ userRouter.get('/:id', async (request, response) => {
 
 userRouter.post('/', async (request, response) => {
     const body = request.body
+    let user = await User.findOne({email: body.email})
+    if( user ){
+        console.log(user)
+        throw new Error( "User already existed" )
+    }
     const salt = 10
     const passwordHash = await bcrypt.hash(body.password, salt)
 
     const newUser = new User({
         email: body.email,
-        name: body.name,
         passwordHash: passwordHash,
-        events: body.events,
+        events: [],
     })
 
     const savedUser = await newUser.save()
+
+    sendEmail(savedUser.email,"Welcome to Calenda2_0",{name: savedUser.email.split()[0]},"./template/welcome.handlebars")
     response.status(201).json(savedUser)
 })
 

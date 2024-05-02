@@ -164,7 +164,7 @@ eventRouter.post('/editEvents/:eventID', async (request, res) => {
     const title = eventData.TITLE
     const startTime= eventData.START_TIME
     const endTime= eventData.END_TIME
-    let period= eventData.PERIOD !== "" ? eventData.PERIOD : 'NULL';
+    let period= eventData.PERIOD !== "" ? eventData.PERIOD : 'NULL'
     const descriptions= eventData.DESCRIPTIONS
     const location= eventData.LOCATION
     const eventId = request.params.eventID
