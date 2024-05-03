@@ -24,7 +24,11 @@ mongoose.connect(config.MONGODB_URI).then(result => {
 app.use(cors())
 app.use(express.json())
 app.use('/PasswordReset', (req, res) => {
-    res.sendFile(path.join(__dirname,'/resetpassAssets/index.html'))
+    res.sendFile(path.join(__dirname,'/ui_assets/index.html'))
+} )
+
+app.use('/PasswordResetRequest', (req, res) => {
+    res.sendFile(path.join(__dirname,'/ui_assets/request.html'))
 } )
 app.use(middlewares.requestLogger)
 app.use(middlewares.tokenExtractor)

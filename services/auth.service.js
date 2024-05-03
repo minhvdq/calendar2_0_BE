@@ -6,7 +6,7 @@ const bcrypt = require("bcrypt");
 
 const JWTSecret = process.env.JWT_SECRET;
 const bcryptSalt = process.env.BCRYPT_SALT;
-const clientURL = process.env.CLIENT_URL;
+const clientURL = 'http://localhost:3001/PasswordReset/ui_assets/index.html';
 
 const requestPasswordReset = async (email) => {
   const user = await User.findOne({ email });
@@ -24,7 +24,7 @@ const requestPasswordReset = async (email) => {
     createdAt: Date.now(),
   }).save();
 
-  const link = `${clientURL}/passwordReset?token=${resetToken}&id=${user._id}`;
+  const link = `${clientURL}?token=${resetToken}&id=${user._id}`;
 
   sendEmail(
     user.email,
@@ -42,6 +42,7 @@ const resetPassword = async (userId, token, password) => {
   let passwordResetToken = await Token.findOne({ userId });
 
   if (!passwordResetToken) {
+    console.log("in process 1")
     throw new Error("Invalid or expired password reset token");
   }
 
@@ -50,6 +51,7 @@ const resetPassword = async (userId, token, password) => {
   const isValid = await bcrypt.compare(token, passwordResetToken.token);
 
   if (!isValid) {
+    console.log("in process 2")
     throw new Error("Invalid or expired password reset token");
   }
 

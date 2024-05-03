@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Request reset</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script> 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <!-- <script src="./main.js" defer></script>    -->
+  </head>
+  <body>
+    <div class='container d-flex justify-content-center align-items-center min-vh-100 min-vw-100'>
+      <div class='row border rounded-5 p-3 bg-white shadow box-area'>
+        <div class='row align-items-center'>
+            <form id="reset-form" class="mb-3" >
+            
+            <div class="row justify-content-center mb-3">
+                <lable class="form-label" for="email">Your Email</lable>
+                <input type="email" id="email" class="form-control form-control-lg bg-light fs-6" required/>
+            </div>
+            <div id="tail" class="mt-3">
+                <button id="submit-button" type="submit" class="btn btn-primary w-100 fs-6">Submit</button>
+                <p id="err"></p>
+            </div>
+            </form>
+            <script>
+                $(document).ready(function() {
+                var resetForm = document.getElementById('reset-form')
+                var resetButton = document.getElementById('submit-button')
+                var baseUrl = 'http://localhost:3001/api/auth/requestResetPassword'
+                var emailAdd = document.getElementById('email')
+                var error = document.getElementById('err')
+
+                var setError =  function(es) {
+                    error.innerHTML = es
+                    setTimeout(() => {
+                    error.innerHTML = ''
+                    }, 3000)
+                    throw new Error(es)
+                }
+
+
+                $("#reset-form").submit(function(e) {
+                    e.preventDefault()
+                    console.log("hello world")
+                    $.ajax({
+                        method: "POST",
+                        contentType: "application/json",
+                        url: `${baseUrl}`,
+                        data: JSON.stringify({
+                            email: `${emailAdd.value}`
+                        }),
+                        success: function(data, status){
+                            if( status === 'success'){
+                                resetForm.disabled = true
+                                alert("Reset link sent to email, pleas check!")
+                                window.location.href = "http://localhost:5173/";
+                                
+                            }else{
+                                setError('Token expired or something might happened, try again later!')
+                                alert("Error connecting to server " + status);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            setError('Email does not exist')
+                            alert("Error connecting to server " + status);
+                        },
+                        dataType: "json"
+                    })
+                    // $.post(`${baseUrl}`, sendData)
+                    // .done(function(data, status) {
+                    //     window.location.href = "http://localhost:5173/";
+                    // })
+                    // .fail(function(a, b, error){
+                    //     console.log("error appear")
+                    //     setError('Failed to reset password: ' + error)
+                    // })
+                })
+            })
+            </script>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
